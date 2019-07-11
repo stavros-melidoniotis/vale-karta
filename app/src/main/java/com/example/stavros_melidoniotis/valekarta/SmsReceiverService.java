@@ -7,7 +7,7 @@ import android.os.IBinder;
 import android.provider.Telephony;
 
 public class SmsReceiverService extends Service {
-    private static SmsBroadcastReceiver smsBroadcastReceiver;
+    private SmsBroadcastReceiver smsBroadcastReceiver;
 
     public SmsReceiverService() {
     }
@@ -19,19 +19,24 @@ public class SmsReceiverService extends Service {
 
     @Override
     public void onCreate() {
-        registerSmsReceiver();
+        System.out.println("------------------------------Service Started---------------------------------");
+        smsBroadcastReceiver = new SmsBroadcastReceiver();
+
+        smsBroadcastReceiver.setListener(new SmsBroadcastReceiver.Listener() {
+            @Override
+            public void onTextReceived(String text) {
+                System.out.println("------------------------------"+text+"---------------------------------");
+            }
+        });
+
+        IntentFilter filter = new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
+        registerReceiver(smsBroadcastReceiver, filter);
+        System.out.println("------------------------------Receiver Registered---------------------------------");
     }
 
     @Override
     public void onDestroy() {
         unregisterReceiver(smsBroadcastReceiver);
         smsBroadcastReceiver = null;
-    }
-
-    private void registerSmsReceiver() {
-        smsBroadcastReceiver = new SmsBroadcastReceiver();
-
-        IntentFilter filter = new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
-        registerReceiver(smsBroadcastReceiver, filter);
     }
 }
