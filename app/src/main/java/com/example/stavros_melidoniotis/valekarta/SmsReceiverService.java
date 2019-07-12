@@ -22,10 +22,10 @@ public class SmsReceiverService extends Service {
         System.out.println("------------------------------Service Started---------------------------------");
         smsBroadcastReceiver = new SmsBroadcastReceiver();
 
-        smsBroadcastReceiver.setListener(new SmsBroadcastReceiver.Listener() {
+        smsBroadcastReceiver.setListener(new SmsListener() {
             @Override
-            public void onTextReceived(String text) {
-                System.out.println("------------------------------"+text+"---------------------------------");
+            public void messageReceived(String message) {
+                System.out.println("------------------------------"+message+"---------------------------------");
             }
         });
 
