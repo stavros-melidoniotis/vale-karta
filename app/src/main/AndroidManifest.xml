@@ -18,7 +18,7 @@
             android:exported="true"></service>
 
         <receiver
-            android:name=".SmsBroadcastReceiver"
+            android:name=".ChargerConnectedBroadcastReceiver"
             android:enabled="true"
             android:exported="true" />
 

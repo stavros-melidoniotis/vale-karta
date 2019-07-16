@@ -2,13 +2,13 @@ package com.example.stavros_melidoniotis.valekarta;
 
 import android.app.Service;
 import android.content.Intent;
-import android.content.IntentFilter;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Build;
 import android.os.IBinder;
-import android.provider.Telephony;
+import android.support.annotation.RequiresApi;
 
 public class SmsReceiverService extends Service {
-    private SmsBroadcastReceiver smsBroadcastReceiver;
-
     public SmsReceiverService() {
     }
 
@@ -17,26 +17,34 @@ public class SmsReceiverService extends Service {
         return null;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onCreate() {
         System.out.println("------------------------------Service Started---------------------------------");
-        smsBroadcastReceiver = new SmsBroadcastReceiver();
+        Cursor cursor = getContentResolver().query(Uri.parse("content://sms/inbox"), null, null, null);
 
-        smsBroadcastReceiver.setListener(new SmsListener() {
-            @Override
-            public void messageReceived(String message) {
-                System.out.println("------------------------------"+message+"---------------------------------");
-            }
-        });
+        String smsData = "";
 
-        IntentFilter filter = new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
-        registerReceiver(smsBroadcastReceiver, filter);
-        System.out.println("------------------------------Receiver Registered---------------------------------");
+        if (cursor.moveToFirst()) {
+            do {
+                // get sender's name
+                String sender = cursor.getString(cursor.getColumnIndex("address"));
+
+                if (sender.equals("WhatsUP")) {
+                    // get SMS's text
+                    String text = cursor.getString(cursor.getColumnIndex("body"));
+                    System.out.println(text);
+                } else {
+                    continue;
+                }
+            } while (cursor.moveToNext());
+
+            //System.out.println(smsData);
+        }
     }
 
     @Override
     public void onDestroy() {
-        unregisterReceiver(smsBroadcastReceiver);
-        smsBroadcastReceiver = null;
+
     }
 }

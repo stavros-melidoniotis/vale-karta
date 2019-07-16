@@ -2,6 +2,7 @@ package com.example.stavros_melidoniotis.valekarta;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -10,7 +11,7 @@ import android.os.Bundle;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
-
+    private ChargerConnectedBroadcastReceiver chargerConnectedBroadcastReceiver;
     private static final int SMS_PERMISSION_CODE = 0;
 
     /**
@@ -34,20 +35,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
-            case SMS_PERMISSION_CODE: {
-                // start service if permission is granted
+            case SMS_PERMISSION_CODE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Intent intent = new Intent();
-                    intent.setClassName("com.example.stavros_melidoniotis.valekarta", "com.example.stavros_melidoniotis.valekarta.SmsReceiverService");
-                    startService(intent);
 
-                    Toast.makeText(this, "Sms listener service started", Toast.LENGTH_SHORT).show();
-                // otherwise exit app
                 } else {
                     finish();
                 }
                 return;
-            }
         }
     }
 
@@ -56,12 +50,18 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // check if read SMS permission is granted
         if (isSmsPermissionGranted()) {
-            Intent intent = new Intent();
-            intent.setClassName("com.example.stavros_melidoniotis.valekarta", "com.example.stavros_melidoniotis.valekarta.SmsReceiverService");
-            startService(intent);
+            chargerConnectedBroadcastReceiver = new ChargerConnectedBroadcastReceiver();
 
-            Toast.makeText(this, "Sms listener service started", Toast.LENGTH_SHORT).show();
+            // filter for when charger is connected or disconnected
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(Intent.ACTION_POWER_CONNECTED);
+            filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+
+            registerReceiver(chargerConnectedBroadcastReceiver, filter);
+
+            Toast.makeText(this, "Receiver registered", Toast.LENGTH_SHORT).show();
         } else {
             requestReadSmsPermission();
         }
