@@ -22,6 +22,10 @@ public class ChargerConnectedBroadcastReceiver extends BroadcastReceiver {
                 context.stopService(smsService);
                 System.out.println("Power disconnected --- Stoping service");
                 break;
+//            case Intent.ACTION_AIRPLANE_MODE_CHANGED:
+//                context.startService(smsService);
+//                System.out.println("Power connected --- Starting service");
+//                break;
         }
     }
 }

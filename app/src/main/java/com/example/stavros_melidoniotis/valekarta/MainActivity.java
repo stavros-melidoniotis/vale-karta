@@ -24,9 +24,8 @@ public class MainActivity extends AppCompatActivity {
      */
     public boolean permissionsGranted() {
         for (String permission : permissions) {
-            if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED){
+            if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
                 return false;
-            }
         }
         return true;
     }
@@ -73,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
             IntentFilter filter = new IntentFilter();
             filter.addAction(Intent.ACTION_POWER_CONNECTED);
             filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+            //filter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
 
             registerReceiver(chargerConnectedBroadcastReceiver, filter);
 

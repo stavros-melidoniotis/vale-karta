@@ -1,7 +1,6 @@
 package com.example.stavros_melidoniotis.valekarta;
 
 import android.app.Service;
-import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
@@ -12,11 +11,10 @@ import android.provider.CalendarContract;
 import android.support.annotation.RequiresApi;
 
 import java.util.Calendar;
+import java.util.TimeZone;
 
 
 public class SmsReceiverService extends Service {
-    public SmsReceiverService() {
-    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -46,9 +44,21 @@ public class SmsReceiverService extends Service {
 
             System.out.println("Month: "+month+"\nDay: "+day);
 
-            if (createCalendarReminder(Integer.parseInt(month), Integer.parseInt(day)) != null) {
-                System.out.println("Reminder added successfully");
+            long eventId = createCalendarEvent(Integer.parseInt(month), Integer.parseInt(day));
+
+            if (eventId > 0) {
+                System.out.println("Event added successfully");
+
+//                if (createCalendarReminder(eventId)) {
+//                    System.out.println("Reminder added successfully");
+//                } else {
+//                    System.out.println("Reminder not added successfully");
+//                }
+            } else {
+                System.out.println("Event not added successfully");
             }
+        } else {
+            // ADD NOTIFICATION SHOWING NO MESSAGE WAS FOUND
         }
     }
 
@@ -71,43 +81,61 @@ public class SmsReceiverService extends Service {
                 if (sender.equals("WhatsUP")) {
                     // get SMS's text
                     text = cursor.getString(cursor.getColumnIndex("body"));
-                } else {
-                    continue;
                 }
             } while (cursor.moveToNext());
         }
+        cursor.close();
         return text;
     }
 
     // method used to create a calendar reminder one day before the date found inside message's body
-    private Uri createCalendarReminder(int month, int day){
+    private long createCalendarEvent(int month, int day) {
         Calendar beginTime = Calendar.getInstance();
         Calendar endTime = Calendar.getInstance();
         int year = beginTime.get(Calendar.YEAR);
 
-        // months range from 0 to 11
-        beginTime.set(year, month - 1, day - 1 , 12, 30);
+        beginTime.set(year, month, day - 1, 12, 30);
+        endTime.set(year, month, day - 1, 17, 30);
+
         long startMillis = beginTime.getTimeInMillis();
-        endTime.set(year, month - 1, day - 1, 17, 30);
         long endMillis = endTime.getTimeInMillis();
 
-        ContentResolver cr = getContentResolver();
-        ContentValues values = new ContentValues();
+        ContentValues event = new ContentValues();
 
-        values.put(CalendarContract.Events.DTSTART, startMillis);
-        values.put(CalendarContract.Events.DTEND, endMillis);
-        values.put(CalendarContract.Events.TITLE, "Ανανέωση υπολοίπου What's Up");
-        values.put(CalendarContract.Events.CALENDAR_ID, 3);
-        values.put(CalendarContract.Events.EVENT_TIMEZONE, "Europe/Athens");
+        event.put(CalendarContract.Events.DTSTART, startMillis);
+        event.put(CalendarContract.Events.DTEND, endMillis);
+        event.put(CalendarContract.Events.TITLE, "Ανανέωση υπολοίπου What's Up");
+        event.put(CalendarContract.Events.CALENDAR_ID, 1);
+        event.put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().getID());
+        event.put(CalendarContract.Events.HAS_ALARM, 1);
 
-        Uri uri = cr.insert(CalendarContract.Events.CONTENT_URI, values);
+        Uri eventUri = getContentResolver().insert(CalendarContract.Events.CONTENT_URI, event);
 
-        return uri;
+        long eventId = Long.parseLong(eventUri.getLastPathSegment());
+
+        return eventId;
     }
+
+    // method used to add a reminder in calendar event
+//    private boolean createCalendarReminder(long eventId){
+//        ContentValues reminder = new ContentValues();
+//
+//        reminder.put(CalendarContract.Reminders.EVENT_ID, eventId);
+//        reminder.put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_ALERT);
+//        reminder.put(CalendarContract.Reminders.MINUTES, 0);
+//
+//        Uri reminderUri = getContentResolver().insert(CalendarContract.Reminders.CONTENT_URI, reminder);
+//
+//        long reminderId = Long.parseLong(reminderUri.getLastPathSegment());
+//
+//        if (reminderId > 0)
+//            return true;
+//
+//        return false;
+//    }
 
     // method used to parse due date from message's body
     private String parseSMSBody(String body){
         return body.substring(104, 109).trim();
     }
-
 }
