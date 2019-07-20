@@ -84,4 +84,11 @@ public class MainActivity extends AppCompatActivity {
             requestAllPermissions();
         }
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (chargerConnectedBroadcastReceiver != null)
+            unregisterReceiver(chargerConnectedBroadcastReceiver);
+    }
 }

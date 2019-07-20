@@ -1,13 +1,16 @@
 package com.example.stavros_melidoniotis.valekarta;
 
 import android.Manifest;
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
@@ -15,13 +18,17 @@ import android.provider.CalendarContract;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 
 import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 
 public class SmsReceiverService extends Service {
     private static final String CHANNEL_ID = "valeKartaChannel";
+    private static final int NOTIFICATION_ID = 21653;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -34,6 +41,15 @@ public class SmsReceiverService extends Service {
     public void onCreate() {
         System.out.println("------------------------------Service Started---------------------------------");
 
+        Notification notification;
+        createNotificationChannel();
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID);
+
+        // set standard notification characteristics
+        builder.setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle("Ειδοποίηση:")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
         String smsBody = getSMSBody();
 
         // if smsBody is null, then no text from What's Up was found
@@ -42,6 +58,15 @@ public class SmsReceiverService extends Service {
             String[] splittedDate = date.split("/");
             String day = splittedDate[0];
             String month = splittedDate[1];
+
+            Calendar calendar = new GregorianCalendar(Calendar.YEAR, Integer.parseInt(month) - 1, Integer.parseInt(day) - 1);
+            long time = calendar.getTime().getTime();
+            Uri.Builder uriBuilder = CalendarContract.CONTENT_URI.buildUpon();
+            uriBuilder.appendPath("time");
+            uriBuilder.appendPath(Long.toString(time));
+
+            Intent calendarIntent = new Intent(Intent.ACTION_VIEW, uriBuilder.build());
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 1001, calendarIntent, 0);
 
             // if month value is e.g 06 change it to 6
             if (month.charAt(0) == '0')
@@ -58,29 +83,29 @@ public class SmsReceiverService extends Service {
 
                 if (createCalendarReminder(eventId)) {
                     System.out.println("Reminder added successfully");
-                    createNotificationChannel();
 
-                    NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "valeKartaChannel")
-                            //.setSmallIcon(R.drawable.notification_icon)
-                            .setContentTitle("Vale Karta!")
-                            .setContentText("Δημιουργήθηκε συμβάν στο ημερολόγιο για την ανανέωση του υπολοίπου σας.")
-                            .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-
-                    //builder.build();
-                } else {
-                    System.out.println("Reminder not added successfully");
+                    // event added notification
+                    builder.setContentText("Δημιουργήθηκε συμβάν στο ημερολόγιο για την ανανέωση του υπολοίπου σας.")
+                            .setContentIntent(pendingIntent)
+                            .setStyle(new NotificationCompat.BigTextStyle()
+                                    .bigText("Δημιουργήθηκε συμβάν στο ημερολόγιο για την ανανέωση του υπολοίπου σας."));
                 }
-            } else {
-                System.out.println("Event not added successfully");
             }
         } else {
-            // ADD NOTIFICATION SHOWING NO MESSAGE WAS FOUND
+            // message not found notification
+            builder.setContentText("Δεν βρέθηκε μήνυμα για δημιουργία συμβάντος.")
+                    .setStyle(new NotificationCompat.BigTextStyle()
+                            .bigText("Δεν βρέθηκε μήνυμα για δημιουργία συμβάντος."));
         }
+        // create and display notification
+        notification = builder.build();
+        NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
+        notificationManagerCompat.notify(NOTIFICATION_ID, notification);
     }
 
     @Override
     public void onDestroy() {
-
+        stopSelf();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -162,6 +187,7 @@ public class SmsReceiverService extends Service {
         return body.substring(104, 109).trim();
     }
 
+    // method used to create a notification channel for post Oreo devices
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = CHANNEL_ID;
@@ -170,6 +196,10 @@ public class SmsReceiverService extends Service {
 
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
             channel.setDescription(description);
+            channel.enableLights(true);
+            channel.enableVibration(true);
+            channel.setLightColor(Color.MAGENTA);
+            channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
 
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
