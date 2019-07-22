@@ -1,20 +1,22 @@
 package com.example.stavros_melidoniotis.valekarta;
 
 import android.Manifest;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.os.Build;
+import android.provider.Telephony;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
-    private ChargerConnectedBroadcastReceiver chargerConnectedBroadcastReceiver;
     private static final int ALL_PERMISSIONS = 0;
+    private Intent chargerService = new Intent()
+            .setClassName("com.example.stavros_melidoniotis.valekarta", "com.example.stavros_melidoniotis.valekarta.ChargerService");
+    private Intent calendarService = new Intent()
+            .setClassName("com.example.stavros_melidoniotis.valekarta", "com.example.stavros_melidoniotis.valekarta.CalendarService");
 
     String[] permissions = {
             Manifest.permission.WRITE_CALENDAR,
@@ -45,16 +47,7 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case ALL_PERMISSIONS:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    chargerConnectedBroadcastReceiver = new ChargerConnectedBroadcastReceiver();
-
-                    // filter for when charger is connected or disconnected
-                    IntentFilter filter = new IntentFilter();
-                    filter.addAction(Intent.ACTION_POWER_CONNECTED);
-                    filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-
-                    registerReceiver(chargerConnectedBroadcastReceiver, filter);
-
-                    Toast.makeText(this, "Receiver registered", Toast.LENGTH_SHORT).show();
+                    startService(chargerService);
                 } else {
                     finish();
                 }
@@ -69,17 +62,15 @@ public class MainActivity extends AppCompatActivity {
 
         // check if permissions are granted
         if (permissionsGranted()) {
-            chargerConnectedBroadcastReceiver = new ChargerConnectedBroadcastReceiver();
+            startService(chargerService);
 
-            // filter for when charger is connected or disconnected
-            IntentFilter filter = new IntentFilter();
-            filter.addAction(Intent.ACTION_POWER_CONNECTED);
-            filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-            filter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-
-            registerReceiver(chargerConnectedBroadcastReceiver, filter);
-
-            Toast.makeText(this, "Receiver registered", Toast.LENGTH_SHORT).show();
+            // when button is pressed start calendar service manually and check for an sms message
+            findViewById(R.id.buttonAddEvent).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    startService(calendarService);
+                }
+            });
         } else {
             requestAllPermissions();
         }
@@ -88,7 +79,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (chargerConnectedBroadcastReceiver != null)
-            unregisterReceiver(chargerConnectedBroadcastReceiver);
+        stopService(chargerService);
     }
 }

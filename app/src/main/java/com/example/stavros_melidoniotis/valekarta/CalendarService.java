@@ -26,29 +26,32 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 
-public class SmsReceiverService extends Service {
+public class CalendarService extends Service {
     private static final String CHANNEL_ID = "valeKartaChannel";
     private static final int NOTIFICATION_ID = 21653;
+    private Notification notification;
+    private NotificationCompat.Builder builder;
 
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
 
-
-    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onCreate() {
-        System.out.println("------------------------------Service Started---------------------------------");
-
-        Notification notification;
         createNotificationChannel();
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID);
+        builder = new NotificationCompat.Builder(this, CHANNEL_ID);
 
         // set standard notification characteristics
         builder.setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle("Ειδοποίηση:")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        System.out.println("------------------------------CalendarService Started---------------------------------");
 
         String smsBody = getSMSBody();
 
@@ -59,14 +62,14 @@ public class SmsReceiverService extends Service {
             String day = splittedDate[0];
             String month = splittedDate[1];
 
-            Calendar calendar = new GregorianCalendar(Calendar.YEAR, Integer.parseInt(month) - 1, Integer.parseInt(day) - 1);
-            long time = calendar.getTime().getTime();
-            Uri.Builder uriBuilder = CalendarContract.CONTENT_URI.buildUpon();
-            uriBuilder.appendPath("time");
-            uriBuilder.appendPath(Long.toString(time));
-
-            Intent calendarIntent = new Intent(Intent.ACTION_VIEW, uriBuilder.build());
-            PendingIntent pendingIntent = PendingIntent.getActivity(this, 1001, calendarIntent, 0);
+//            Calendar calendar = new GregorianCalendar(Calendar.YEAR, Integer.parseInt(month) - 1, Integer.parseInt(day) - 1);
+//            long time = calendar.getTime().getTime();
+//            Uri.Builder uriBuilder = CalendarContract.CONTENT_URI.buildUpon();
+//            uriBuilder.appendPath("time");
+//            uriBuilder.appendPath(Long.toString(time));
+//
+//            Intent calendarIntent = new Intent(Intent.ACTION_VIEW, uriBuilder.build());
+//            PendingIntent pendingIntent = PendingIntent.getActivity(this, 1001, calendarIntent, 0);
 
             // if month value is e.g 06 change it to 6
             if (month.charAt(0) == '0')
@@ -79,14 +82,14 @@ public class SmsReceiverService extends Service {
 
             // if event was added successfully put a reminder, otherwise display appropriate notification
             if (eventId > 0) {
-                System.out.println("Event added successfully");
+                //System.out.println("Event added successfully");
 
                 if (createCalendarReminder(eventId)) {
-                    System.out.println("Reminder added successfully");
+                    //System.out.println("Reminder added successfully");
 
                     // event added notification
                     builder.setContentText("Δημιουργήθηκε συμβάν στο ημερολόγιο για την ανανέωση του υπολοίπου σας.")
-                            .setContentIntent(pendingIntent)
+                            //.setContentIntent(pendingIntent)
                             .setStyle(new NotificationCompat.BigTextStyle()
                                     .bigText("Δημιουργήθηκε συμβάν στο ημερολόγιο για την ανανέωση του υπολοίπου σας."));
                 }
@@ -101,6 +104,8 @@ public class SmsReceiverService extends Service {
         notification = builder.build();
         NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
         notificationManagerCompat.notify(NOTIFICATION_ID, notification);
+
+        return Service.START_NOT_STICKY;
     }
 
     @Override
@@ -129,7 +134,7 @@ public class SmsReceiverService extends Service {
         return text;
     }
 
-    // method used to create a calendar reminder one day before the date found inside message's body
+    // method used to create a calendar event one day before the date found inside message's body
     private long createCalendarEvent(int month, int day) {
         Uri eventUri;
         Calendar beginTime = Calendar.getInstance();

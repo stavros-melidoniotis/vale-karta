@@ -10,21 +10,18 @@ public class ChargerConnectedBroadcastReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Intent smsService = new Intent();
-        smsService.setClassName("com.example.stavros_melidoniotis.valekarta", "com.example.stavros_melidoniotis.valekarta.SmsReceiverService");
+        Intent calendarService = new Intent();
+        calendarService.setClassName("com.example.stavros_melidoniotis.valekarta", "com.example.stavros_melidoniotis.valekarta.CalendarService");
 
         switch (intent.getAction()){
             case Intent.ACTION_POWER_CONNECTED:
-                context.startService(smsService);
-                System.out.println("Power connected --- Starting service");
+                context.startService(calendarService);
                 break;
             case Intent.ACTION_POWER_DISCONNECTED:
-                context.stopService(smsService);
-                System.out.println("Power disconnected --- Stoping service");
+                context.stopService(calendarService);
                 break;
             case Intent.ACTION_AIRPLANE_MODE_CHANGED:
-                context.startService(smsService);
-                System.out.println("Power connected --- Starting service");
+                context.startService(calendarService);
                 break;
         }
     }
