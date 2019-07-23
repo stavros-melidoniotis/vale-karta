@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.IBinder;
 import android.provider.Telephony;
 import android.support.v4.app.NotificationCompat;
+import android.widget.Toast;
 
 public class ChargerService extends Service {
     private ChargerConnectedBroadcastReceiver chargerConnectedBroadcastReceiver;
@@ -56,6 +57,7 @@ public class ChargerService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         registerReceiver(chargerConnectedBroadcastReceiver, filter);
+        Toast.makeText(this, "Receiver registered", Toast.LENGTH_SHORT).show();
         return START_STICKY;
     }
 

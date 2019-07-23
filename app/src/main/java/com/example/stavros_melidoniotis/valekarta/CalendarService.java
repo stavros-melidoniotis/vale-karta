@@ -130,7 +130,7 @@ public class CalendarService extends Service {
                 if (sender.equals("WhatsUP")) {
                     // get SMS's text
                     text = cursor.getString(cursor.getColumnIndex("body"));
-                    id = cursor.getInt(cursor.getColumnIndex("id"));
+                    id = cursor.getInt(0);
                     break;
                 }
             } while (cursor.moveToNext());
@@ -220,5 +220,6 @@ public class CalendarService extends Service {
     // method used to delete SMS from inbox after event creation
     private void deleteSMSFromInbox(int id) {
         getContentResolver().delete(Uri.parse("content://sms/conversations/" + id), null, null);
+        System.out.println("-----SMS deleted from inbox-------");
     }
 }

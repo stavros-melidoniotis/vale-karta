@@ -19,7 +19,8 @@ public class MainActivity extends AppCompatActivity {
     private String[] permissions = {
             Manifest.permission.WRITE_CALENDAR,
             Manifest.permission.READ_SMS,
-            Manifest.permission.READ_CALENDAR
+            Manifest.permission.READ_CALENDAR,
+            Manifest.permission.RECEIVE_SMS
     };
 
     /**
