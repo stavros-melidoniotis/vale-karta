@@ -16,7 +16,7 @@
         android:theme="@style/AppTheme">
 
         <service
-            android:name=".ChargerService"
+            android:name=".ForegroundService"
             android:enabled="true"
             android:exported="true" />
         <service
@@ -25,7 +25,7 @@
             android:exported="true" />
 
         <receiver
-            android:name=".ChargerConnectedBroadcastReceiver"
+            android:name=".SmsReceiver"
             android:enabled="true"
             android:exported="true" />
 

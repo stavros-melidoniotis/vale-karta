@@ -12,8 +12,8 @@ import android.view.View;
 
 public class MainActivity extends AppCompatActivity {
     private static final int ALL_PERMISSIONS = 0;
-    private Intent chargerService = new Intent()
-            .setClassName("com.example.stavros_melidoniotis.valekarta", "com.example.stavros_melidoniotis.valekarta.ChargerService");
+    private Intent foregroundService = new Intent()
+            .setClassName("com.example.stavros_melidoniotis.valekarta", "com.example.stavros_melidoniotis.valekarta.ForegroundService");
     private Intent calendarService = new Intent()
             .setClassName("com.example.stavros_melidoniotis.valekarta", "com.example.stavros_melidoniotis.valekarta.CalendarService");
     private String[] permissions = {
@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case ALL_PERMISSIONS:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    startService(chargerService);
+                    startService(foregroundService);
                 } else {
                     finish();
                 }
@@ -62,9 +62,9 @@ public class MainActivity extends AppCompatActivity {
 
         // check if permissions are granted
         if (permissionsGranted()) {
-            startForegroundService(chargerService);
+            startForegroundService(foregroundService);
 
-            // when button is pressed start calendar service manually and check for an sms message
+            // when button is pressed, start calendar service manually and check for an sms message
             findViewById(R.id.buttonAddEvent).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {

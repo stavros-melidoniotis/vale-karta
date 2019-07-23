@@ -6,6 +6,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -21,16 +22,15 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 
 import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 
 public class CalendarService extends Service {
     private static final String CHANNEL_ID = "valeKartaChannel";
-    private static final int NOTIFICATION_ID = 21653;
+    private static final int NOTIFICATION_ID = 21635;
     private Notification notification;
     private NotificationCompat.Builder builder;
+    private long eventID;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -43,8 +43,8 @@ public class CalendarService extends Service {
         builder = new NotificationCompat.Builder(this, CHANNEL_ID);
 
         // set standard notification characteristics
-        builder.setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle("Ειδοποίηση:")
+        builder.setSmallIcon(R.drawable.calendar_notification_logo)
+                .setContentTitle("Ειδοποίηση")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
     }
 
@@ -62,39 +62,33 @@ public class CalendarService extends Service {
             String day = splittedDate[0];
             String month = splittedDate[1];
 
-//            Calendar calendar = new GregorianCalendar(Calendar.YEAR, Integer.parseInt(month) - 1, Integer.parseInt(day) - 1);
-//            long time = calendar.getTime().getTime();
-//            Uri.Builder uriBuilder = CalendarContract.CONTENT_URI.buildUpon();
-//            uriBuilder.appendPath("time");
-//            uriBuilder.appendPath(Long.toString(time));
-//
-//            Intent calendarIntent = new Intent(Intent.ACTION_VIEW, uriBuilder.build());
-//            PendingIntent pendingIntent = PendingIntent.getActivity(this, 1001, calendarIntent, 0);
 
             // if month value is e.g 06 change it to 6
             if (month.charAt(0) == '0')
                 month = String.valueOf(month.charAt(1));
 
-            System.out.println("Month: " + month + "\nDay: " + day);
 
             // create a calendar event
-            long eventId = createCalendarEvent(Integer.parseInt(month) - 1, Integer.parseInt(day) - 1);
+            eventID = createCalendarEvent(Integer.parseInt(month) - 1, Integer.parseInt(day) - 1);
+
 
             // if event was added successfully put a reminder, otherwise display appropriate notification
-            if (eventId > 0) {
-                //System.out.println("Event added successfully");
+            if (eventID != -1) {
+                if (createCalendarReminder(eventID)) {
 
-                if (createCalendarReminder(eventId)) {
-                    //System.out.println("Reminder added successfully");
+                    // following three lines of code are used to open device's calendar when user taps on the notification
+                    Uri uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventID);
+                    Intent calendarIntent = new Intent(Intent.ACTION_VIEW).setData(uri);
+                    PendingIntent openCalendar = PendingIntent.getActivity(this, 1001, calendarIntent, 0);
 
                     // event added notification
                     builder.setContentText("Δημιουργήθηκε συμβάν στο ημερολόγιο για την ανανέωση του υπολοίπου σας.")
-                            //.setContentIntent(pendingIntent)
+                            .setContentIntent(openCalendar)
+                            .setAutoCancel(true)
                             .setStyle(new NotificationCompat.BigTextStyle()
                                     .bigText("Δημιουργήθηκε συμβάν στο ημερολόγιο για την ανανέωση του υπολοίπου σας."));
                 }
             }
-
             deleteSMSFromInbox(smsID);
         } else {
             // message not found notification
@@ -102,7 +96,7 @@ public class CalendarService extends Service {
                     .setStyle(new NotificationCompat.BigTextStyle()
                             .bigText("Δεν βρέθηκε μήνυμα για δημιουργία συμβάντος."));
         }
-        // create and display notification
+        // build and display notification
         notification = builder.build();
         NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
         notificationManagerCompat.notify(NOTIFICATION_ID, notification);
@@ -116,7 +110,9 @@ public class CalendarService extends Service {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    // this method is used to retrieve the SMS message sent from WhatsUP, located in phone's SMS inbox
+    /**
+     * Method is used to retrieve the SMS message sent from WhatsUP, located in phone's SMS inbox
+     */
     private String[] getSMSBody() {
         Cursor cursor = getContentResolver().query(Uri.parse("content://sms/inbox"), null, null, null);
         String text = null;
@@ -128,9 +124,19 @@ public class CalendarService extends Service {
                 String sender = cursor.getString(cursor.getColumnIndex("address"));
 
                 if (sender.equals("WhatsUP")) {
+//                    for(int idx=0;idx<cursor.getColumnCount();idx++) {
+//                        System.out.println(cursor.getColumnName(idx) + ":" + cursor.getString(idx));
+//                    }
+
+                    // if SMS is already read then don't keep it's text
+                    // this is a temporary fix until deletion is implemented
+                    if (cursor.getInt(cursor.getColumnIndex("read")) == 1)
+                        break;
+
+
                     // get SMS's text
                     text = cursor.getString(cursor.getColumnIndex("body"));
-                    id = cursor.getInt(0);
+                    id = cursor.getInt(cursor.getColumnIndex("_id"));
                     break;
                 }
             } while (cursor.moveToNext());
@@ -140,7 +146,12 @@ public class CalendarService extends Service {
         return smsData;
     }
 
-    // method used to create a calendar event one day before the date found inside message's body
+    /** Method used to create a calendar event one day before the date found inside message's body
+     *
+     * @param month
+     * @param day
+     * @return eventID
+     */
     private long createCalendarEvent(int month, int day) {
         Uri eventUri;
         Calendar beginTime = Calendar.getInstance();
@@ -166,18 +177,22 @@ public class CalendarService extends Service {
         // add event to calendar only if permission was granted from the user
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED) {
             eventUri = getContentResolver().insert(CalendarContract.Events.CONTENT_URI, event);
-            long eventId = Long.parseLong(eventUri.getLastPathSegment());
+            long eventID = Long.parseLong(eventUri.getLastPathSegment());
 
-            return eventId;
+            return eventID;
         }
-        return 0;
+        return -1;
     }
 
-    // method used to add a reminder in calendar event
-    private boolean createCalendarReminder(long eventId) {
+    /** method used to add a reminder in calendar event
+     *
+     * @param eventID
+     * @return true/false
+     */
+    private boolean createCalendarReminder(long eventID) {
         ContentValues reminder = new ContentValues();
 
-        reminder.put(CalendarContract.Reminders.EVENT_ID, eventId);
+        reminder.put(CalendarContract.Reminders.EVENT_ID, eventID);
         reminder.put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_ALERT);
         reminder.put(CalendarContract.Reminders.MINUTES, 0);
 
@@ -193,12 +208,18 @@ public class CalendarService extends Service {
         return false;
     }
 
-    // method used to parse due date from message's body
+    /** method used to parse due date from message's body
+     *
+     * @param body
+     * @return substring of original SMS text
+     */
     private String parseSMSBody(String body){
         return body.substring(104, 109).trim();
     }
 
-    // method used to create a notification channel for post Oreo devices
+    /**
+     *  method used to create a notification channel for post Oreo devices
+     */
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = CHANNEL_ID;
@@ -219,7 +240,9 @@ public class CalendarService extends Service {
 
     // method used to delete SMS from inbox after event creation
     private void deleteSMSFromInbox(int id) {
-        getContentResolver().delete(Uri.parse("content://sms/conversations/" + id), null, null);
-        System.out.println("-----SMS deleted from inbox-------");
+        int deletedSMS = getContentResolver().delete(Uri.parse("content://sms/conversations"), "address=WhatsUP", null);
+
+        if (deletedSMS > 0)
+            System.out.println("-----SMS deleted from inbox-------");
     }
 }

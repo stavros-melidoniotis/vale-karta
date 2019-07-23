@@ -12,15 +12,15 @@ import android.provider.Telephony;
 import android.support.v4.app.NotificationCompat;
 import android.widget.Toast;
 
-public class ChargerService extends Service {
-    private ChargerConnectedBroadcastReceiver chargerConnectedBroadcastReceiver;
+public class ForegroundService extends Service {
+    private SmsReceiver smsReceiver;
     private IntentFilter filter;
     private static final String CHANNEL_ID = "foregroundService";
     private static final int NOTIFICATION_ID = 21653;
     private Notification notification;
     private NotificationCompat.Builder builder;
 
-    public ChargerService() {
+    public ForegroundService() {
     }
 
     @Override
@@ -31,24 +31,18 @@ public class ChargerService extends Service {
 
     @Override
     public void onCreate() {
-        chargerConnectedBroadcastReceiver = new ChargerConnectedBroadcastReceiver();
-        filter = new IntentFilter();
-
-        // filter for when charger is connected or disconnected
-        filter.addAction(Intent.ACTION_POWER_CONNECTED);
-        filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-        filter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-        filter.addAction(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
+        smsReceiver = new SmsReceiver();
+        filter = new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
 
         createNotificationChannel();
         builder = new NotificationCompat.Builder(this, CHANNEL_ID);
 
         // set standard notification characteristics
-        builder.setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle("Charger service running")
+        builder.setSmallIcon(R.drawable.sms_notification_logo)
+                .setContentTitle("Sms receiving service running")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
-        // create and display notification
+        // build and display notification
         notification = builder.build();
         startForeground(NOTIFICATION_ID, notification);
 
@@ -56,14 +50,13 @@ public class ChargerService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        registerReceiver(chargerConnectedBroadcastReceiver, filter);
-        Toast.makeText(this, "Receiver registered", Toast.LENGTH_SHORT).show();
+        registerReceiver(smsReceiver, filter);
         return START_STICKY;
     }
 
     @Override
     public void onDestroy() {
-        unregisterReceiver(chargerConnectedBroadcastReceiver);
+        unregisterReceiver(smsReceiver);
     }
 
     private void createNotificationChannel() {
