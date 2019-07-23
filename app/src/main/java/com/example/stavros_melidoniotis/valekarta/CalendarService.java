@@ -51,9 +51,9 @@ public class CalendarService extends Service {
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        System.out.println("------------------------------CalendarService Started---------------------------------");
-
-        String smsBody = getSMSBody();
+        String[] smsData = getSMSBody();
+        String smsBody = smsData[1];
+        int smsID = Integer.parseInt(smsData[0]);
 
         // if smsBody is null, then no text from What's Up was found
         if (smsBody != null) {
@@ -94,6 +94,8 @@ public class CalendarService extends Service {
                                     .bigText("Δημιουργήθηκε συμβάν στο ημερολόγιο για την ανανέωση του υπολοίπου σας."));
                 }
             }
+
+            deleteSMSFromInbox(smsID);
         } else {
             // message not found notification
             builder.setContentText("Δεν βρέθηκε μήνυμα για δημιουργία συμβάντος.")
@@ -115,9 +117,10 @@ public class CalendarService extends Service {
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     // this method is used to retrieve the SMS message sent from WhatsUP, located in phone's SMS inbox
-    private String getSMSBody() {
+    private String[] getSMSBody() {
         Cursor cursor = getContentResolver().query(Uri.parse("content://sms/inbox"), null, null, null);
         String text = null;
+        int id = -1;
 
         if (cursor.moveToFirst()) {
             do {
@@ -127,11 +130,14 @@ public class CalendarService extends Service {
                 if (sender.equals("WhatsUP")) {
                     // get SMS's text
                     text = cursor.getString(cursor.getColumnIndex("body"));
+                    id = cursor.getInt(cursor.getColumnIndex("id"));
+                    break;
                 }
             } while (cursor.moveToNext());
         }
         cursor.close();
-        return text;
+        String[] smsData = new String[]{String.valueOf(id), text};
+        return smsData;
     }
 
     // method used to create a calendar event one day before the date found inside message's body
@@ -209,5 +215,10 @@ public class CalendarService extends Service {
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
         }
+    }
+
+    // method used to delete SMS from inbox after event creation
+    private void deleteSMSFromInbox(int id) {
+        getContentResolver().delete(Uri.parse("content://sms/conversations/" + id), null, null);
     }
 }
