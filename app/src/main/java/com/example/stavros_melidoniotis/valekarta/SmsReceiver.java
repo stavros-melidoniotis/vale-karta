@@ -15,11 +15,10 @@ public class SmsReceiver extends BroadcastReceiver {
         Intent calendarService = new Intent();
         calendarService.setClassName("com.example.stavros_melidoniotis.valekarta", "com.example.stavros_melidoniotis.valekarta.CalendarService");
 
-        switch (intent.getAction()){
-            case Telephony.Sms.Intents.SMS_RECEIVED_ACTION:
-                Toast.makeText(context, "Just received a message", Toast.LENGTH_SHORT).show();
-                context.startService(calendarService);
-                break;
+        // when a new SMS arrives, display Toast message and start calendar service
+        if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) {
+            Toast.makeText(context, "Just received a message", Toast.LENGTH_SHORT).show();
+            context.startService(calendarService);
         }
     }
 }

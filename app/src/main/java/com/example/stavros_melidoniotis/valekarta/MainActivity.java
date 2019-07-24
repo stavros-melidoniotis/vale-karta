@@ -23,9 +23,7 @@ public class MainActivity extends AppCompatActivity {
             Manifest.permission.RECEIVE_SMS
     };
 
-    /**
-     * Check if we have required permissions
-     */
+    //Check if we have required permissions
     public boolean permissionsGranted() {
         for (String permission : permissions) {
             if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
@@ -34,23 +32,19 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    /**
-     * Request runtime permissions
-     */
+    //Request runtime permissions
     private void requestAllPermissions() {
         ActivityCompat.requestPermissions(this, permissions, ALL_PERMISSIONS);
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case ALL_PERMISSIONS:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    startService(foregroundService);
-                } else {
-                    finish();
-                }
-                return;
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == ALL_PERMISSIONS) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startService(foregroundService);
+            } else {
+                finish();
+            }
         }
     }
 

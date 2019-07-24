@@ -9,43 +9,37 @@ import android.content.IntentFilter;
 import android.os.Build;
 import android.os.IBinder;
 import android.provider.Telephony;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
-import android.widget.Toast;
 
 public class ForegroundService extends Service {
     private SmsReceiver smsReceiver;
     private IntentFilter filter;
     private static final String CHANNEL_ID = "foregroundService";
     private static final int NOTIFICATION_ID = 21653;
-    private Notification notification;
-    private NotificationCompat.Builder builder;
-
-    public ForegroundService() {
-    }
 
     @Override
     public IBinder onBind(Intent intent) {
-        // TODO: Return the communication channel to the service.
-        throw new UnsupportedOperationException("Not yet implemented");
+        return null;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     public void onCreate() {
         smsReceiver = new SmsReceiver();
         filter = new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
 
         createNotificationChannel();
-        builder = new NotificationCompat.Builder(this, CHANNEL_ID);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID);
 
         // set standard notification characteristics
         builder.setSmallIcon(R.drawable.sms_notification_logo)
                 .setContentTitle("Sms receiving service running")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
-        // build and display notification
-        notification = builder.build();
+        // start foreground service and display notification
+        Notification notification = builder.build();
         startForeground(NOTIFICATION_ID, notification);
-
     }
 
     @Override
@@ -61,12 +55,10 @@ public class ForegroundService extends Service {
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = CHANNEL_ID;
-            String description = CHANNEL_ID;
             int importance = NotificationManager.IMPORTANCE_DEFAULT;
 
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-            channel.setDescription(description);
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_ID, importance);
+            channel.setDescription(CHANNEL_ID);
             channel.enableVibration(true);
 
             NotificationManager notificationManager = getSystemService(NotificationManager.class);

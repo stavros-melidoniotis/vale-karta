@@ -28,9 +28,7 @@ import java.util.TimeZone;
 public class CalendarService extends Service {
     private static final String CHANNEL_ID = "valeKartaChannel";
     private static final int NOTIFICATION_ID = 21635;
-    private Notification notification;
     private NotificationCompat.Builder builder;
-    private long eventID;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -69,7 +67,7 @@ public class CalendarService extends Service {
 
 
             // create a calendar event
-            eventID = createCalendarEvent(Integer.parseInt(month) - 1, Integer.parseInt(day) - 1);
+            long eventID = createCalendarEvent(Integer.parseInt(month) - 1, Integer.parseInt(day) - 1);
 
 
             // if event was added successfully put a reminder, otherwise display appropriate notification
@@ -97,7 +95,7 @@ public class CalendarService extends Service {
                             .bigText("Δεν βρέθηκε μήνυμα για δημιουργία συμβάντος."));
         }
         // build and display notification
-        notification = builder.build();
+        Notification notification = builder.build();
         NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
         notificationManagerCompat.notify(NOTIFICATION_ID, notification);
 
@@ -110,9 +108,6 @@ public class CalendarService extends Service {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    /**
-     * Method is used to retrieve the SMS message sent from WhatsUP, located in phone's SMS inbox
-     */
     private String[] getSMSBody() {
         Cursor cursor = getContentResolver().query(Uri.parse("content://sms/inbox"), null, null, null);
         String text = null;
@@ -142,11 +137,10 @@ public class CalendarService extends Service {
             } while (cursor.moveToNext());
         }
         cursor.close();
-        String[] smsData = new String[]{String.valueOf(id), text};
-        return smsData;
+        return new String[]{String.valueOf(id), text};
     }
 
-    /** Method used to create a calendar event one day before the date found inside message's body
+    /* Method used to create a calendar event one day before the date found inside message's body
      *
      * @param month
      * @param day
@@ -177,14 +171,12 @@ public class CalendarService extends Service {
         // add event to calendar only if permission was granted from the user
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED) {
             eventUri = getContentResolver().insert(CalendarContract.Events.CONTENT_URI, event);
-            long eventID = Long.parseLong(eventUri.getLastPathSegment());
-
-            return eventID;
+            return Long.parseLong(eventUri.getLastPathSegment());
         }
         return -1;
     }
 
-    /** method used to add a reminder in calendar event
+    /* method used to add a reminder in calendar event
      *
      * @param eventID
      * @return true/false
@@ -202,13 +194,12 @@ public class CalendarService extends Service {
             Uri reminderUri = getContentResolver().insert(CalendarContract.Reminders.CONTENT_URI, reminder);
             long reminderId = Long.parseLong(reminderUri.getLastPathSegment());
 
-            if (reminderId > 0)
-                return true;
+            return reminderId > 0;
         }
         return false;
     }
 
-    /** method used to parse due date from message's body
+    /* method used to parse due date from message's body
      *
      * @param body
      * @return substring of original SMS text
@@ -217,17 +208,15 @@ public class CalendarService extends Service {
         return body.substring(104, 109).trim();
     }
 
-    /**
+    /*
      *  method used to create a notification channel for post Oreo devices
      */
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = CHANNEL_ID;
-            String description = CHANNEL_ID;
             int importance = NotificationManager.IMPORTANCE_DEFAULT;
 
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-            channel.setDescription(description);
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_ID, importance);
+            channel.setDescription(CHANNEL_ID);
             channel.enableLights(true);
             channel.enableVibration(true);
             channel.setLightColor(Color.MAGENTA);
