@@ -23,6 +23,7 @@ import android.support.v4.app.NotificationManagerCompat;
 
 import java.util.Calendar;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 
 public class CalendarService extends Service {
@@ -49,6 +50,14 @@ public class CalendarService extends Service {
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        //Sleep for 1 second before searching for the SMS.
+        //This is used so that the system will have time to save the just received SMS in inbox folder.
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         String[] smsData = getSMSBody();
         String smsBody = smsData[1];
         int smsID = Integer.parseInt(smsData[0]);
@@ -205,6 +214,7 @@ public class CalendarService extends Service {
      * @return substring of original SMS text
      */
     private String parseSMSBody(String body){
+        System.out.println(body);
         return body.substring(104, 109).trim();
     }
 
